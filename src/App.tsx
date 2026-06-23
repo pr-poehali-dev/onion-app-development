@@ -35,6 +35,8 @@ const App = () => {
     setUser(null);
   };
 
+  const handleUpdateUser = (updated: User) => setUser(updated);
+
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -55,7 +57,7 @@ const App = () => {
           <Routes>
             <Route
               path="/"
-              element={user ? <Index user={user} onLogout={handleLogout} /> : <Navigate to="/auth" replace />}
+              element={user ? <Index user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} /> : <Navigate to="/auth" replace />}
             />
             <Route
               path="/auth"

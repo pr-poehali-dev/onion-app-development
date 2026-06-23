@@ -74,14 +74,17 @@ const INITIAL_DIALOGS: Dialog[] = [
   },
 ];
 
+const AUTH_URL = 'https://functions.poehali.dev/7620a252-ed4f-4b1d-9a87-041f7f7fcb6c';
+
 type User = { id: number; username: string; emoji: string; bio: string; level: number; xp: number };
 
 interface IndexProps {
   user: User;
   onLogout: () => void;
+  onUpdateUser: (u: User) => void;
 }
 
-const Index = ({ user, onLogout }: IndexProps) => {
+const Index = ({ user, onLogout, onUpdateUser }: IndexProps) => {
   const [tab, setTab] = useState('profile');
   const [openFriend, setOpenFriend] = useState<Friend | null>(null);
   const [search, setSearch] = useState('');
@@ -150,6 +153,35 @@ const Index = ({ user, onLogout }: IndexProps) => {
       read: false,
       type: 'friend' as const,
     }, ...prev]);
+  };
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUsername, setEditUsername] = useState(user.username);
+  const [editError, setEditError] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+
+  const saveUsername = async () => {
+    const val = editUsername.trim();
+    if (!val || val === user.username) { setEditOpen(false); return; }
+    if (val.length < 3) { setEditError('Минимум 3 символа'); return; }
+    setEditLoading(true);
+    setEditError('');
+    try {
+      const token = localStorage.getItem('luk_token') || '';
+      const res = await fetch(`${AUTH_URL}/?action=update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        body: JSON.stringify({ username: val }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'Ошибка'); return; }
+      onUpdateUser(data.user);
+      setEditOpen(false);
+    } catch {
+      setEditError('Ошибка соединения');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const SUGGESTIONS = [
@@ -223,7 +255,12 @@ const Index = ({ user, onLogout }: IndexProps) => {
                     <span className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground text-sm font-black px-3 py-1 rounded-full game-shadow-gold">LVL {user.level}</span>
                   </div>
                   <div className="flex-1 text-center sm:text-left">
-                    <h1 className="text-3xl font-black">{user.username} {user.emoji}</h1>
+                    <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <h1 className="text-3xl font-black">{user.username} {user.emoji}</h1>
+                      <button onClick={() => { setEditUsername(user.username); setEditError(''); setEditOpen(true); }} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center hover-scale flex-shrink-0">
+                        <Icon name="Pencil" size={15} className="text-muted-foreground" />
+                      </button>
+                    </div>
                     <p className="text-muted-foreground font-medium">{user.bio || 'Новый игрок в Луке!'}</p>
                     <div className="mt-4">
                       <div className="flex justify-between text-sm font-bold mb-1">
@@ -616,6 +653,43 @@ const Index = ({ user, onLogout }: IndexProps) => {
               </button>
               <button className="py-3 rounded-2xl bg-muted text-foreground font-bold hover-scale flex items-center justify-center gap-2">
                 <Icon name="UserPlus" size={18} /> Подписки
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit username modal */}
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm animate-fade-in" onClick={() => setEditOpen(false)}>
+          <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 game-shadow animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-black mb-4 flex items-center gap-2"><span>✏️</span> Изменить ник</h2>
+            <div className="relative mb-3">
+              <Icon name="User" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={editUsername}
+                onChange={e => setEditUsername(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveUsername()}
+                placeholder="Новый ник"
+                maxLength={32}
+                autoFocus
+                className="w-full rounded-2xl bg-muted pl-11 pr-4 py-3 font-bold outline-none focus:ring-2 ring-primary"
+              />
+            </div>
+            {editError && (
+              <div className="rounded-2xl bg-destructive/10 px-4 py-2 text-sm font-bold text-destructive mb-3 flex items-center gap-2 animate-fade-in">
+                <Icon name="AlertCircle" size={15} />{editError}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setEditOpen(false)} className="py-3 rounded-2xl bg-muted font-bold hover-scale">Отмена</button>
+              <button
+                onClick={saveUsername}
+                disabled={editLoading || !editUsername.trim()}
+                className="py-3 rounded-2xl bg-primary text-primary-foreground font-bold hover-scale game-shadow disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {editLoading ? <Icon name="Loader" size={18} className="animate-spin" /> : <Icon name="Check" size={18} />}
+                Сохранить
               </button>
             </div>
           </div>

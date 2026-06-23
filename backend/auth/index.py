@@ -129,4 +129,57 @@ def handler(event: dict, context) -> dict:
 
         return ok({'token': token, 'user': {'id': row[0], 'username': row[1], 'emoji': row[2], 'bio': row[3], 'level': row[4], 'xp': row[5]}})
 
+    # POST ?action=update — обновление профиля
+    if method == 'POST' and action == 'update':
+        token = event.get('headers', {}).get('X-Auth-Token', '')
+        if not token:
+            return err('Токен не передан', 401)
+
+        new_username = (body.get('username') or '').strip()
+        new_bio = (body.get('bio') or '').strip()
+        new_emoji = body.get('emoji', '')
+
+        if new_username and len(new_username) < 3:
+            return err('Имя должно быть не менее 3 символов')
+        if new_emoji and new_emoji not in EMOJIS:
+            return err('Недопустимый эмодзи')
+
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT id FROM {schema}.users WHERE token = %s", (token,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return err('Неверный токен', 401)
+        uid = row[0]
+
+        fields, vals = [], []
+        if new_username:
+            fields.append('username = %s')
+            vals.append(new_username)
+        if new_bio is not None and 'bio' in body:
+            fields.append('bio = %s')
+            vals.append(new_bio)
+        if new_emoji:
+            fields.append('emoji = %s')
+            vals.append(new_emoji)
+
+        if not fields:
+            conn.close()
+            return err('Нечего обновлять')
+
+        vals.append(uid)
+        try:
+            cur.execute(f"UPDATE {schema}.users SET {', '.join(fields)} WHERE id = %s RETURNING id, username, emoji, bio, level, xp", vals)
+            updated = cur.fetchone()
+            conn.commit()
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            conn.close()
+            return err('Такой ник уже занят')
+        finally:
+            conn.close()
+
+        return ok({'user': {'id': updated[0], 'username': updated[1], 'emoji': updated[2], 'bio': updated[3], 'level': updated[4], 'xp': updated[5]}})
+
     return err('Не найдено', 404)
