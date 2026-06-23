@@ -7,9 +7,12 @@ const NAV = [
   { id: 'profile', label: 'Профиль', icon: 'User' },
   { id: 'friends', label: 'Друзья', icon: 'Users' },
   { id: 'chat', label: 'Чат', icon: 'MessageCircle' },
+  { id: 'notify', label: 'События', icon: 'Bell' },
   { id: 'leaders', label: 'Рейтинг', icon: 'Trophy' },
   { id: 'clubs', label: 'Сообщества', icon: 'Sparkles' },
 ];
+
+type Notif = { id: number; emoji: string; text: string; time: string; read: boolean; type: 'friend' | 'like' | 'msg' | 'rank' | 'club' };
 
 const ACHIEVEMENTS = [
   { emoji: '🔥', name: 'Огонь', desc: '7 дней подряд', color: 'from-orange-400 to-red-500' },
@@ -49,6 +52,31 @@ const Index = () => {
   const [openFriend, setOpenFriend] = useState<Friend | null>(null);
   const [search, setSearch] = useState('');
   const [myFriends, setMyFriends] = useState(FRIENDS.map(f => f.name));
+  const [notifs, setNotifs] = useState<Notif[]>([
+    { id: 1, emoji: '🦄', text: 'Аня лайкнула твоё достижение «Ракета»', time: '2 мин назад', read: false, type: 'like' },
+    { id: 2, emoji: '🐉', text: 'Макс написал тебе в чат', time: '15 мин назад', read: false, type: 'msg' },
+    { id: 3, emoji: '🏆', text: 'Ты поднялся на 4 место в рейтинге недели!', time: '1 час назад', read: false, type: 'rank' },
+    { id: 4, emoji: '🦁', text: 'Паша хочет добавить тебя в друзья', time: '2 часа назад', read: true, type: 'friend' },
+    { id: 5, emoji: '🎮', text: 'Сообщество «Геймеры» опубликовало новый пост', time: '3 часа назад', read: true, type: 'club' },
+    { id: 6, emoji: '🌸', text: 'Лера получила достижение «Король» — поздравь её!', time: 'вчера', read: true, type: 'like' },
+  ]);
+
+  const unreadCount = notifs.filter(n => !n.read).length;
+
+  const markAllRead = () => setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+  const markRead = (id: number) => setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const deleteNotif = (id: number) => setNotifs(prev => prev.filter(n => n.id !== id));
+
+  const addFriendNotif = (name: string) => {
+    setNotifs(prev => [{
+      id: Date.now(),
+      emoji: '🤝',
+      text: `Ты добавил ${name} в друзья!`,
+      time: 'только что',
+      read: false,
+      type: 'friend' as const,
+    }, ...prev]);
+  };
 
   const SUGGESTIONS = [
     { name: 'Соня', emoji: '🐱', online: false, lvl: 34, handle: '@cat_sonya', bio: 'Котики и аниме 🌸', xp: 50, stats: [['Друзья', '120'], ['Лайки', '3.1k'], ['Рейтинг', '#18']], badges: ['🌟', '⚡'] },
@@ -74,9 +102,11 @@ const Index = () => {
             <span className="font-display text-3xl text-primary">Лук</span>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative w-11 h-11 rounded-2xl bg-white game-shadow-pink flex items-center justify-center hover-scale">
+            <button onClick={() => setTab('notify')} className="relative w-11 h-11 rounded-2xl bg-white game-shadow-pink flex items-center justify-center hover-scale">
               <Icon name="Bell" size={20} className="text-secondary" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-secondary text-white text-xs font-bold flex items-center justify-center">3</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-secondary text-white text-xs font-bold flex items-center justify-center animate-wiggle">{unreadCount}</span>
+              )}
             </button>
             <img src={HERO_AVATAR} alt="Я" className="w-11 h-11 rounded-2xl object-cover border-2 border-accent" />
           </div>
@@ -194,7 +224,7 @@ const Index = () => {
                           <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.handle}</div>
                         </button>
                         <button
-                          onClick={() => setMyFriends(prev => isFriend ? prev.filter(n => n !== f.name) : [...prev, f.name])}
+                          onClick={() => { setMyFriends(prev => isFriend ? prev.filter(n => n !== f.name) : [...prev, f.name]); if (!isFriend) addFriendNotif(f.name); }}
                           className={`px-3 py-2 rounded-xl font-bold text-sm hover-scale flex items-center gap-1 ${isFriend ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground game-shadow'}`}
                         >
                           <Icon name={isFriend ? 'UserCheck' : 'UserPlus'} size={15} />
@@ -246,7 +276,7 @@ const Index = () => {
                             <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.handle}</div>
                           </button>
                           <button
-                            onClick={() => setMyFriends(prev => isFriend ? prev.filter(n => n !== f.name) : [...prev, f.name])}
+                            onClick={() => { setMyFriends(prev => isFriend ? prev.filter(n => n !== f.name) : [...prev, f.name]); if (!isFriend) addFriendNotif(f.name); }}
                             className={`px-3 py-2 rounded-xl font-bold text-sm hover-scale flex items-center gap-1 ${isFriend ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground game-shadow'}`}
                           >
                             <Icon name={isFriend ? 'UserCheck' : 'UserPlus'} size={15} />
@@ -283,6 +313,65 @@ const Index = () => {
                   <Icon name="Send" size={20} />
                 </button>
               </div>
+            </div>
+          </section>
+        )}
+
+        {/* NOTIFICATIONS */}
+        {tab === 'notify' && (
+          <section className="animate-fade-in space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black flex items-center gap-2"><span>🔔</span> Уведомления {unreadCount > 0 && <span className="bg-secondary text-white text-xs font-black px-2.5 py-0.5 rounded-full">{unreadCount}</span>}</h2>
+              {unreadCount > 0 && (
+                <button onClick={markAllRead} className="text-sm font-bold text-primary hover:underline">
+                  Прочитать все
+                </button>
+              )}
+            </div>
+
+            {notifs.length === 0 && (
+              <div className="rounded-3xl bg-white p-10 text-center game-shadow">
+                <div className="text-5xl mb-3">🎉</div>
+                <div className="font-black text-lg">Всё прочитано!</div>
+                <div className="text-sm text-muted-foreground">Новых событий пока нет</div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {notifs.map((n, i) => {
+                const typeColor: Record<string, string> = {
+                  friend: 'from-violet-400 to-purple-500',
+                  like: 'from-pink-400 to-rose-500',
+                  msg: 'from-cyan-400 to-blue-500',
+                  rank: 'from-amber-400 to-yellow-500',
+                  club: 'from-emerald-400 to-green-500',
+                };
+                return (
+                  <div
+                    key={n.id}
+                    onClick={() => markRead(n.id)}
+                    className={`flex items-center gap-4 rounded-3xl p-4 cursor-pointer hover-scale animate-fade-in transition-colors ${n.read ? 'bg-white' : 'bg-primary/5 border-2 border-primary/20'}`}
+                    style={{ animationDelay: `${i * 50}ms` }}
+                  >
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${typeColor[n.type]} flex items-center justify-center text-2xl flex-shrink-0`}>
+                      {n.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-bold leading-snug ${n.read ? 'text-foreground' : 'font-black'}`}>{n.text}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{n.time}</div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {!n.read && <span className="w-2.5 h-2.5 rounded-full bg-secondary" />}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteNotif(n.id); }}
+                        className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Icon name="X" size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
