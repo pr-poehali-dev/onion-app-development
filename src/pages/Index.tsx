@@ -47,6 +47,20 @@ type Friend = typeof FRIENDS[number];
 const Index = () => {
   const [tab, setTab] = useState('profile');
   const [openFriend, setOpenFriend] = useState<Friend | null>(null);
+  const [search, setSearch] = useState('');
+  const [myFriends, setMyFriends] = useState(FRIENDS.map(f => f.name));
+
+  const SUGGESTIONS = [
+    { name: 'Соня', emoji: '🐱', online: false, lvl: 34, handle: '@cat_sonya', bio: 'Котики и аниме 🌸', xp: 50, stats: [['Друзья', '120'], ['Лайки', '3.1k'], ['Рейтинг', '#18']], badges: ['🌟', '⚡'] },
+    { name: 'Паша', emoji: '🦁', online: true, lvl: 45, handle: '@lion_pasha', bio: 'Программирую миры 💻', xp: 70, stats: [['Друзья', '440'], ['Лайки', '7.2k'], ['Рейтинг', '#6']], badges: ['🔥', '🚀', '💎'] },
+    { name: 'Катя', emoji: '🦋', online: true, lvl: 23, handle: '@butterfly_k', bio: 'Танцую и пою 🎤', xp: 20, stats: [['Друзья', '89'], ['Лайки', '1.5k'], ['Рейтинг', '#35']], badges: ['🌟'] },
+  ] as Friend[];
+
+  const allPeople = [...FRIENDS, ...SUGGESTIONS];
+  const filtered = search.trim()
+    ? allPeople.filter(f => f.name.toLowerCase().includes(search.toLowerCase()) || f.handle.toLowerCase().includes(search.toLowerCase()))
+    : null;
+  const currentFriends = FRIENDS.filter(f => myFriends.includes(f.name));
 
   return (
     <div className="min-h-screen pb-28 md:pb-10">
@@ -138,25 +152,113 @@ const Index = () => {
 
         {/* FRIENDS */}
         {tab === 'friends' && (
-          <section className="animate-fade-in">
-            <h2 className="text-xl font-black mb-4 flex items-center gap-2"><span>🤝</span> Мои друзья</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {FRIENDS.map((f) => (
-                <button key={f.name} onClick={() => setOpenFriend(f)} className="flex items-center gap-4 rounded-3xl bg-white p-4 game-shadow hover-scale text-left w-full">
-                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl">
-                    {f.emoji}
-                    {f.online && <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-black">{f.name}</div>
-                    <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.online ? 'в сети' : 'не в сети'}</div>
-                  </div>
-                  <span className="px-4 py-2 rounded-xl bg-muted text-foreground font-bold text-sm flex items-center gap-1">
-                    Профиль <Icon name="ChevronRight" size={16} />
-                  </span>
+          <section className="animate-fade-in space-y-5">
+            {/* Search */}
+            <div className="relative">
+              <Icon name="Search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Найти пользователя..."
+                className="w-full rounded-2xl bg-white game-shadow pl-11 pr-4 py-3 font-medium outline-none focus:ring-2 ring-primary"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <Icon name="X" size={16} />
                 </button>
-              ))}
+              )}
             </div>
+
+            {/* Search results */}
+            {filtered ? (
+              <div>
+                <h2 className="text-sm font-black text-muted-foreground uppercase mb-3">Результаты поиска · {filtered.length}</h2>
+                {filtered.length === 0 && (
+                  <div className="rounded-3xl bg-white p-8 text-center game-shadow">
+                    <div className="text-4xl mb-2">🔍</div>
+                    <div className="font-black">Никого не нашлось</div>
+                    <div className="text-sm text-muted-foreground">Попробуй другой запрос</div>
+                  </div>
+                )}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {filtered.map(f => {
+                    const isFriend = myFriends.includes(f.name);
+                    return (
+                      <div key={f.name} className="flex items-center gap-4 rounded-3xl bg-white p-4 game-shadow animate-fade-in">
+                        <button onClick={() => setOpenFriend(f)} className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl flex-shrink-0">
+                          {f.emoji}
+                          {f.online && <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />}
+                        </button>
+                        <button onClick={() => setOpenFriend(f)} className="flex-1 text-left">
+                          <div className="font-black">{f.name}</div>
+                          <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.handle}</div>
+                        </button>
+                        <button
+                          onClick={() => setMyFriends(prev => isFriend ? prev.filter(n => n !== f.name) : [...prev, f.name])}
+                          className={`px-3 py-2 rounded-xl font-bold text-sm hover-scale flex items-center gap-1 ${isFriend ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground game-shadow'}`}
+                        >
+                          <Icon name={isFriend ? 'UserCheck' : 'UserPlus'} size={15} />
+                          {isFriend ? 'Друг' : 'Добавить'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* My friends */}
+                <div>
+                  <h2 className="text-xl font-black mb-3 flex items-center gap-2"><span>🤝</span> Мои друзья · {currentFriends.length}</h2>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {currentFriends.map((f) => (
+                      <button key={f.name} onClick={() => setOpenFriend(f)} className="flex items-center gap-4 rounded-3xl bg-white p-4 game-shadow hover-scale text-left w-full">
+                        <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl">
+                          {f.emoji}
+                          {f.online && <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-black">{f.name}</div>
+                          <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.online ? 'в сети' : 'не в сети'}</div>
+                        </div>
+                        <span className="px-3 py-2 rounded-xl bg-muted text-foreground font-bold text-sm flex items-center gap-1">
+                          Профиль <Icon name="ChevronRight" size={15} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Suggestions */}
+                <div>
+                  <h2 className="text-xl font-black mb-3 flex items-center gap-2"><span>💡</span> Возможно знаешь</h2>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {SUGGESTIONS.map((f) => {
+                      const isFriend = myFriends.includes(f.name);
+                      return (
+                        <div key={f.name} className="flex items-center gap-4 rounded-3xl bg-white p-4 game-shadow">
+                          <button onClick={() => setOpenFriend(f)} className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-3xl flex-shrink-0">
+                            {f.emoji}
+                            {f.online && <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />}
+                          </button>
+                          <button onClick={() => setOpenFriend(f)} className="flex-1 text-left">
+                            <div className="font-black">{f.name}</div>
+                            <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.handle}</div>
+                          </button>
+                          <button
+                            onClick={() => setMyFriends(prev => isFriend ? prev.filter(n => n !== f.name) : [...prev, f.name])}
+                            className={`px-3 py-2 rounded-xl font-bold text-sm hover-scale flex items-center gap-1 ${isFriend ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground game-shadow'}`}
+                          >
+                            <Icon name={isFriend ? 'UserCheck' : 'UserPlus'} size={15} />
+                            {isFriend ? 'Друг' : 'Добавить'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </section>
         )}
 
