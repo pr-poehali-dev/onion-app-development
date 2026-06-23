@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 
-const HERO_AVATAR = 'https://cdn.poehali.dev/projects/967d51c2-31dc-4e2a-9fe1-405a052649ae/files/e9457d39-94ef-4034-97c3-d59134967b00.jpg';
 
 const NAV = [
   { id: 'profile', label: 'Профиль', icon: 'User' },
@@ -75,7 +74,14 @@ const INITIAL_DIALOGS: Dialog[] = [
   },
 ];
 
-const Index = () => {
+type User = { id: number; username: string; emoji: string; bio: string; level: number; xp: number };
+
+interface IndexProps {
+  user: User;
+  onLogout: () => void;
+}
+
+const Index = ({ user, onLogout }: IndexProps) => {
   const [tab, setTab] = useState('profile');
   const [openFriend, setOpenFriend] = useState<Friend | null>(null);
   const [search, setSearch] = useState('');
@@ -176,7 +182,13 @@ const Index = () => {
                 <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-secondary text-white text-xs font-bold flex items-center justify-center animate-wiggle">{unreadCount}</span>
               )}
             </button>
-            <img src={HERO_AVATAR} alt="Я" className="w-11 h-11 rounded-2xl object-cover border-2 border-accent" />
+            <button
+              onClick={onLogout}
+              title="Выйти"
+              className="w-11 h-11 rounded-2xl bg-white game-shadow flex items-center justify-center text-2xl hover-scale border-2 border-accent"
+            >
+              {user.emoji}
+            </button>
           </div>
         </div>
       </header>
@@ -205,31 +217,40 @@ const Index = () => {
               <div className="rounded-[1.85rem] bg-white p-6 md:p-8">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="relative">
-                    <img src={HERO_AVATAR} alt="Профиль" className="w-28 h-28 rounded-3xl object-cover border-4 border-accent" />
-                    <span className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground text-sm font-black px-3 py-1 rounded-full game-shadow-gold">LVL 47</span>
+                    <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-6xl border-4 border-accent">
+                      {user.emoji}
+                    </div>
+                    <span className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground text-sm font-black px-3 py-1 rounded-full game-shadow-gold">LVL {user.level}</span>
                   </div>
                   <div className="flex-1 text-center sm:text-left">
-                    <h1 className="text-3xl font-black">Луковый Боец 🧅</h1>
-                    <p className="text-muted-foreground font-medium">@onion_warrior · в космосе с 2021</p>
+                    <h1 className="text-3xl font-black">{user.username} {user.emoji}</h1>
+                    <p className="text-muted-foreground font-medium">{user.bio || 'Новый игрок в Луке!'}</p>
                     <div className="mt-4">
                       <div className="flex justify-between text-sm font-bold mb-1">
-                        <span>Опыт до LVL 48</span>
-                        <span className="text-primary">7320 / 10000 XP</span>
+                        <span>Опыт до LVL {user.level + 1}</span>
+                        <span className="text-primary">{user.xp} / {user.level * 1000} XP</span>
                       </div>
                       <div className="h-4 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: '73%' }} />
+                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${Math.min(100, Math.round((user.xp / (user.level * 1000)) * 100))}%` }} />
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-6">
-                  {[['Друзья', '512'], ['Лайки', '8.4k'], ['Рейтинг', '#4']].map(([l, v]) => (
+                  {[['Друзья', '0'], ['Лайки', '0'], ['Рейтинг', '—']].map(([l, v]) => (
                     <div key={l} className="rounded-2xl bg-muted p-4 text-center">
                       <div className="text-2xl font-black text-primary">{v}</div>
                       <div className="text-xs font-bold text-muted-foreground uppercase">{l}</div>
                     </div>
                   ))}
                 </div>
+
+                <button
+                  onClick={onLogout}
+                  className="mt-4 flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Icon name="LogOut" size={16} /> Выйти из аккаунта
+                </button>
               </div>
             </div>
 
