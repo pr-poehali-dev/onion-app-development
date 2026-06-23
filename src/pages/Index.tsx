@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 
 const HERO_AVATAR = 'https://cdn.poehali.dev/projects/967d51c2-31dc-4e2a-9fe1-405a052649ae/files/e9457d39-94ef-4034-97c3-d59134967b00.jpg';
@@ -47,6 +47,34 @@ const FRIENDS = [
 
 type Friend = typeof FRIENDS[number];
 
+type Message = { id: number; me: boolean; text: string; time: string };
+type Dialog = { friendName: string; messages: Message[] };
+
+const INITIAL_DIALOGS: Dialog[] = [
+  {
+    friendName: 'Аня',
+    messages: [
+      { id: 1, me: false, text: 'Привет! Видел новый лидерборд? 👀', time: '14:20' },
+      { id: 2, me: true, text: 'Да! Я уже на 4 месте 🚀', time: '14:21' },
+      { id: 3, me: false, text: 'Огонь! Погнали в Геймеры вместе 🎮', time: '14:22' },
+      { id: 4, me: true, text: 'Поехали! 🧅', time: '14:23' },
+    ],
+  },
+  {
+    friendName: 'Макс',
+    messages: [
+      { id: 1, me: false, text: 'Эй, ты сегодня в игре? 🐉', time: '12:00' },
+      { id: 2, me: true, text: 'Буду вечером!', time: '12:05' },
+    ],
+  },
+  {
+    friendName: 'Дима',
+    messages: [
+      { id: 1, me: false, text: 'Спорт — это жизнь ⚽', time: 'вчера' },
+    ],
+  },
+];
+
 const Index = () => {
   const [tab, setTab] = useState('profile');
   const [openFriend, setOpenFriend] = useState<Friend | null>(null);
@@ -60,6 +88,46 @@ const Index = () => {
     { id: 5, emoji: '🎮', text: 'Сообщество «Геймеры» опубликовало новый пост', time: '3 часа назад', read: true, type: 'club' },
     { id: 6, emoji: '🌸', text: 'Лера получила достижение «Король» — поздравь её!', time: 'вчера', read: true, type: 'like' },
   ]);
+
+  const [dialogs, setDialogs] = useState<Dialog[]>(INITIAL_DIALOGS);
+  const [activeDialog, setActiveDialog] = useState<string>('Аня');
+  const [inputText, setInputText] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentDialog = dialogs.find(d => d.friendName === activeDialog);
+  const currentFriendData = FRIENDS.find(f => f.name === activeDialog);
+
+  const sendMessage = () => {
+    const text = inputText.trim();
+    if (!text) return;
+    const now = new Date();
+    const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setDialogs(prev => prev.map(d =>
+      d.friendName === activeDialog
+        ? { ...d, messages: [...d.messages, { id: Date.now(), me: true, text, time }] }
+        : d
+    ));
+    setInputText('');
+    setTimeout(() => {
+      const replies: Record<string, string[]> = {
+        'Аня': ['Классно! 🦄', 'Ха-ха, точно!', 'Обязательно! 🎨', 'Ты лучший 💎'],
+        'Макс': ['Огонь! 🐉', 'Идёт 🎮', 'Ладно, договорились!', 'Поехали! 🚀'],
+        'Дима': ['Согласен ⚽', 'Да, брат!', 'Зачёт 💪', 'Завтра тренировка?'],
+      };
+      const list = replies[activeDialog] || ['👍', '😄', 'Ок!'];
+      const reply = list[Math.floor(Math.random() * list.length)];
+      const replyTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+      setDialogs(prev => prev.map(d =>
+        d.friendName === activeDialog
+          ? { ...d, messages: [...d.messages, { id: Date.now() + 1, me: false, text: reply, time: replyTime }] }
+          : d
+      ));
+    }, 900 + Math.random() * 600);
+  };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [dialogs, activeDialog]);
 
   const unreadCount = notifs.filter(n => !n.read).length;
 
@@ -294,22 +362,76 @@ const Index = () => {
 
         {/* CHAT */}
         {tab === 'chat' && (
-          <section className="animate-fade-in">
-            <h2 className="text-xl font-black mb-4 flex items-center gap-2"><span>💬</span> Приватный чат с Аней 🦄</h2>
-            <div className="rounded-[2rem] bg-white p-5 game-shadow space-y-3">
-              {[
-                { me: false, t: 'Привет! Видел новый лидерборд? 👀' },
-                { me: true, t: 'Да! Я уже на 4 месте 🚀' },
-                { me: false, t: 'Огонь! Погнали в Геймеры вместе 🎮' },
-                { me: true, t: 'Поехали! 🧅' },
-              ].map((m, i) => (
-                <div key={i} className={`flex ${m.me ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl font-medium ${m.me ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>{m.t}</div>
+          <section className="animate-fade-in flex flex-col gap-4">
+            {/* Dialog list */}
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {dialogs.map(d => {
+                const fd = FRIENDS.find(f => f.name === d.friendName);
+                const isActive = activeDialog === d.friendName;
+                return (
+                  <button
+                    key={d.friendName}
+                    onClick={() => setActiveDialog(d.friendName)}
+                    className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-all ${isActive ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-80'}`}
+                  >
+                    <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl ${isActive ? 'ring-4 ring-primary ring-offset-2' : ''}`}>
+                      {fd?.emoji ?? '👤'}
+                      {fd?.online && <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white" />}
+                    </div>
+                    <span className={`text-xs font-bold ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>{d.friendName}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Chat window */}
+            <div className="rounded-[2rem] bg-white game-shadow flex flex-col overflow-hidden" style={{ minHeight: '420px' }}>
+              {/* Chat header */}
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+                <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
+                  {currentFriendData?.emoji ?? '👤'}
+                  {currentFriendData?.online && <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white" />}
                 </div>
-              ))}
-              <div className="flex gap-2 pt-2">
-                <input placeholder="Напиши сообщение..." className="flex-1 rounded-2xl bg-muted px-4 py-3 font-medium outline-none focus:ring-2 ring-primary" />
-                <button className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center hover-scale game-shadow">
+                <div>
+                  <div className="font-black">{activeDialog}</div>
+                  <div className="text-xs font-bold text-muted-foreground">
+                    {currentFriendData?.online ? '● в сети' : '○ не в сети'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-3" style={{ maxHeight: '340px' }}>
+                {currentDialog?.messages.map((m) => (
+                  <div key={m.id} className={`flex items-end gap-2 ${m.me ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                    {!m.me && (
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-base flex-shrink-0">
+                        {currentFriendData?.emoji ?? '👤'}
+                      </div>
+                    )}
+                    <div className={`max-w-[72%] px-4 py-2.5 rounded-2xl font-medium text-sm ${m.me ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'}`}>
+                      {m.text}
+                      <div className={`text-[10px] mt-0.5 ${m.me ? 'text-primary-foreground/60 text-right' : 'text-muted-foreground'}`}>{m.time}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="px-4 py-4 border-t border-border flex gap-2">
+                <input
+                  value={inputText}
+                  onChange={e => setInputText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                  placeholder="Напиши сообщение..."
+                  className="flex-1 rounded-2xl bg-muted px-4 py-3 font-medium outline-none focus:ring-2 ring-primary text-sm"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!inputText.trim()}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center hover-scale game-shadow disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   <Icon name="Send" size={20} />
                 </button>
               </div>
@@ -468,7 +590,7 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-6">
-              <button onClick={() => { setOpenFriend(null); setTab('chat'); }} className="py-3 rounded-2xl bg-primary text-primary-foreground font-bold hover-scale flex items-center justify-center gap-2">
+              <button onClick={() => { if (openFriend && dialogs.some(d => d.friendName === openFriend.name)) { setActiveDialog(openFriend.name); } setOpenFriend(null); setTab('chat'); }} className="py-3 rounded-2xl bg-primary text-primary-foreground font-bold hover-scale flex items-center justify-center gap-2">
                 <Icon name="MessageCircle" size={18} /> Чат
               </button>
               <button className="py-3 rounded-2xl bg-muted text-foreground font-bold hover-scale flex items-center justify-center gap-2">
