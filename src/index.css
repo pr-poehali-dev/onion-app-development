@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 250 60% 98%;
+    --foreground: 252 60% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 252 60% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 252 60% 14%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 258 90% 62%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 330 90% 62%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 250 40% 95%;
+    --muted-foreground: 252 20% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 42 100% 58%;
+    --accent-foreground: 252 60% 14%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 250 40% 90%;
+    --input: 250 40% 90%;
+    --ring: 258 90% 62%;
 
-    --radius: 0.5rem;
+    --radius: 1.25rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -97,5 +97,37 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Rubik", sans-serif;
+    background-image:
+      radial-gradient(
+        circle at 15% 20%,
+        hsl(258 90% 62% / 0.08),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 85% 10%,
+        hsl(330 90% 62% / 0.08),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 50% 90%,
+        hsl(42 100% 58% / 0.08),
+        transparent 45%
+      );
+  }
+}
+
+@layer utilities {
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+  .game-shadow {
+    box-shadow: 0 8px 0 0 hsl(258 50% 85%);
+  }
+  .game-shadow-pink {
+    box-shadow: 0 8px 0 0 hsl(330 60% 85%);
+  }
+  .game-shadow-gold {
+    box-shadow: 0 8px 0 0 hsl(42 70% 75%);
   }
 }
