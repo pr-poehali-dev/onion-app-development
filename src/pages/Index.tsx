@@ -36,14 +36,17 @@ const CLUBS = [
 ];
 
 const FRIENDS = [
-  { name: 'Аня', emoji: '🦄', online: true, lvl: 42 },
-  { name: 'Макс', emoji: '🐉', online: true, lvl: 38 },
-  { name: 'Лера', emoji: '🌸', online: false, lvl: 51 },
-  { name: 'Дима', emoji: '🦊', online: true, lvl: 29 },
+  { name: 'Аня', emoji: '🦄', online: true, lvl: 42, handle: '@unicorn_anya', bio: 'Рисую и мечтаю 🎨', xp: 62, stats: [['Друзья', '318'], ['Лайки', '5.1k'], ['Рейтинг', '#7']], badges: ['🔥', '💎', '🌟'] },
+  { name: 'Макс', emoji: '🐉', online: true, lvl: 38, handle: '@dragon_max', bio: 'Геймер до мозга костей 🎮', xp: 45, stats: [['Друзья', '274'], ['Лайки', '4.2k'], ['Рейтинг', '#12']], badges: ['🚀', '⚡'] },
+  { name: 'Лера', emoji: '🌸', online: false, lvl: 51, handle: '@lera_blossom', bio: 'Музыка — моя жизнь 🎵', xp: 80, stats: [['Друзья', '521'], ['Лайки', '9.7k'], ['Рейтинг', '#3']], badges: ['👑', '💎', '🌟', '🔥'] },
+  { name: 'Дима', emoji: '🦊', online: true, lvl: 29, handle: '@foxy_dima', bio: 'Спорт каждый день ⚽', xp: 33, stats: [['Друзья', '198'], ['Лайки', '2.8k'], ['Рейтинг', '#21']], badges: ['⚡', '🌟'] },
 ];
+
+type Friend = typeof FRIENDS[number];
 
 const Index = () => {
   const [tab, setTab] = useState('profile');
+  const [openFriend, setOpenFriend] = useState<Friend | null>(null);
 
   return (
     <div className="min-h-screen pb-28 md:pb-10">
@@ -139,7 +142,7 @@ const Index = () => {
             <h2 className="text-xl font-black mb-4 flex items-center gap-2"><span>🤝</span> Мои друзья</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {FRIENDS.map((f) => (
-                <div key={f.name} className="flex items-center gap-4 rounded-3xl bg-white p-4 game-shadow hover-scale">
+                <button key={f.name} onClick={() => setOpenFriend(f)} className="flex items-center gap-4 rounded-3xl bg-white p-4 game-shadow hover-scale text-left w-full">
                   <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl">
                     {f.emoji}
                     {f.online && <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white" />}
@@ -148,8 +151,10 @@ const Index = () => {
                     <div className="font-black">{f.name}</div>
                     <div className="text-xs font-bold text-muted-foreground">LVL {f.lvl} · {f.online ? 'в сети' : 'не в сети'}</div>
                   </div>
-                  <button className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover-scale">Чат</button>
-                </div>
+                  <span className="px-4 py-2 rounded-xl bg-muted text-foreground font-bold text-sm flex items-center gap-1">
+                    Профиль <Icon name="ChevronRight" size={16} />
+                  </span>
+                </button>
               ))}
             </div>
           </section>
@@ -222,6 +227,66 @@ const Index = () => {
           </section>
         )}
       </main>
+
+      {/* Friend profile modal */}
+      {openFriend && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm animate-fade-in" onClick={() => setOpenFriend(null)}>
+          <div className="relative w-full max-w-md rounded-[2rem] bg-white p-6 game-shadow animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setOpenFriend(null)} className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-muted flex items-center justify-center hover-scale">
+              <Icon name="X" size={18} />
+            </button>
+            <div className="flex flex-col items-center text-center">
+              <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-5xl">
+                {openFriend.emoji}
+                <span className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground text-xs font-black px-2.5 py-1 rounded-full game-shadow-gold">LVL {openFriend.lvl}</span>
+              </div>
+              <h2 className="text-2xl font-black mt-4">{openFriend.name}</h2>
+              <p className="text-sm font-bold text-muted-foreground">{openFriend.handle}</p>
+              <p className="font-medium mt-2">{openFriend.bio}</p>
+              <span className={`mt-2 text-xs font-bold px-3 py-1 rounded-full ${openFriend.online ? 'bg-emerald-100 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
+                {openFriend.online ? '● в сети' : '○ не в сети'}
+              </span>
+            </div>
+
+            <div className="mt-5">
+              <div className="flex justify-between text-xs font-bold mb-1">
+                <span>Прогресс уровня</span>
+                <span className="text-primary">{openFriend.xp}%</span>
+              </div>
+              <div className="h-3 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${openFriend.xp}%` }} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mt-5">
+              {openFriend.stats.map(([l, v]) => (
+                <div key={l} className="rounded-2xl bg-muted p-3 text-center">
+                  <div className="text-xl font-black text-primary">{v}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase">{l}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5">
+              <div className="text-sm font-black mb-2">🏆 Достижения</div>
+              <div className="flex gap-2 flex-wrap">
+                {openFriend.badges.map((b, i) => (
+                  <div key={i} className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent/40 to-white flex items-center justify-center text-2xl game-shadow-gold">{b}</div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <button onClick={() => { setOpenFriend(null); setTab('chat'); }} className="py-3 rounded-2xl bg-primary text-primary-foreground font-bold hover-scale flex items-center justify-center gap-2">
+                <Icon name="MessageCircle" size={18} /> Чат
+              </button>
+              <button className="py-3 rounded-2xl bg-muted text-foreground font-bold hover-scale flex items-center justify-center gap-2">
+                <Icon name="UserPlus" size={18} /> Подписки
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/80 backdrop-blur-xl border-t-2 border-white/60 px-2 py-2">
